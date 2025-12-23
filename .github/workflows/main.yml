@@ -10,24 +10,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Run actions/checkout@v3
         uses: actions/checkout@v4
         with:
           persist-credentials: true
 
-      - name: Set up Python
+      - name: Set up Python 3.12.7
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10.12"
+          python-version: "3.12.7"
+
+      - name: Check Env
+        run: |
+          python --version
+          pip --version
+          pwd
+          ls -la
 
       - name: Install dependencies
         run: |
           pip install -r MLProject/requirements.txt
 
-      - name: Run training
+      - name: Set MLflow Tracking URI
+        run: |
+          echo "MLFLOW_TRACKING_URI=file:$(pwd)/MLProject/mlruns" >> $GITHUB_ENV
+
+      - name: Run mlflow project
         run: |
           cd MLProject
           python modelling.py
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r MLProject/requirements.txt
 
       - name: Commit mlruns to repository
         run: |
@@ -37,5 +52,4 @@ jobs:
 
           git add mlruns
           git commit -m "Add MLflow runs from CI" || echo "No changes to commit"
-
           git push
