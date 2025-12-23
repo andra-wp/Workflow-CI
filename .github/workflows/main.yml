@@ -1,4 +1,4 @@
-name: mlflow
+name: train-diabetes-and-commit-mlruns
 
 on:
   push:
@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -20,15 +22,20 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r MLProject/requirements.txt
 
-      - name: Run training with MLflow
+      - name: Run training
         run: |
-          python MLProject/modelling.py
+          cd MLProject
+          python modelling.py
 
-      - name: Upload MLflow runs
-        uses: actions/upload-artifact@v4
-        with:
-          name: mlruns
-          path: mlruns
+      - name: Commit mlruns to repository
+        run: |
+          cd MLProject
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add mlruns
+          git commit -m "Add MLflow runs from CI" || echo "No changes to commit"
+
+          git push
