@@ -58,10 +58,16 @@ def train_with_mlflow(df, target_col, model):
 
 
 def main():
-    df = pd.read_csv("diabetes_preprocessing.csv")
+    from pathlib import Path
+
+    BASE_DIR = Path(__file__).resolve().parent
+    DATASET_PATH = BASE_DIR / "diabetes_preprocessing.csv"
+
+    df = pd.read_csv(DATASET_PATH)
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     _, acc, _ = train_with_mlflow(df, "Outcome", model)
     print("Accuracy:", acc)
+
 
 
 if __name__ == "__main__":
