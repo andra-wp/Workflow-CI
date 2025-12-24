@@ -1,73 +1,58 @@
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 
 import mlflow
 import mlflow.sklearn
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+from pathlib import Path
+
+mlflow.set_tracking_uri("http://127.0.0.1:5000")
+mlflow.set_experiment("diabetes_al_experiment")
 
 
 def train_with_mlflow(df, target_col, model):
     mlflow.sklearn.autolog()
 
-    X = df.drop(columns=[target_col])
-    y = df[target_col].astype(int)
+    with mlflow.start_run(run_name="rf_training"):
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.2,
-        random_state=42,
-        stratify=y
-    )
+        X = df.drop(columns=[target_col])
+        y = df[target_col].astype(int)
 
-    model.fit(X_train, y_train)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y,
+            test_size=0.2,
+            random_state=42,
+            stratify=y
+        )
 
-    input_example = X_train.iloc[:5]
+        model.fit(X_train, y_train)
 
-    mlflow.sklearn.log_model(
-        model,
-        artifact_path="model",
-        input_example=input_example
-    )
+        y_pred = model.predict(X_test)
+        acc = accuracy_score(y_test, y_pred)
 
-    y_pred = model.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
-    mlflow.log_metric("test_accuracy", acc)
-
-    cm = confusion_matrix(y_test, y_pred)
-
-    plt.figure(figsize=(4, 3))
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
-    plt.tight_layout()
-    plt.savefig("confusion_matrix.png")
-    plt.close()
-
-    mlflow.log_artifact("confusion_matrix.png")
-
-    report = classification_report(y_test, y_pred)
-
-    with open("classification_report.txt", "w") as f:
-        f.write(report)
-
-    mlflow.log_artifact("classification_report.txt")
-
-    return model, acc, cm
+    return model, acc
 
 
 def main():
-    from pathlib import Path
-
     BASE_DIR = Path(__file__).resolve().parent
     DATASET_PATH = BASE_DIR / "diabetes_preprocessing.csv"
 
     df = pd.read_csv(DATASET_PATH)
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    _, acc, _ = train_with_mlflow(df, "Outcome", model)
-    print("Accuracy:", acc)
 
+    model = RandomForestClassifier(
+        n_estimators=100,
+        random_state=42
+    )
+
+    _, acc = train_with_mlflow(
+        df=df,
+        target_col="Outcome",
+        model=model
+    )
+
+    print("Accuracy:", acc)
 
 
 if __name__ == "__main__":
