@@ -29,6 +29,7 @@ jobs:
 
       - name: Run mlflow project
         run: |
+          cd MLProject
           mlflow run . --env-manager=local
 
       - name: Commit mlruns to repository
